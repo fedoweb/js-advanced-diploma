@@ -11,12 +11,16 @@ module.exports = {
     module: {
         rules: [
             {
+                test: /\.html$/,
+                use: [
+                  {
+                    loader: 'html-loader',
+                  },
+                ],
+              },
+            {
                 test: /\.css$/i,
                 use: ['style-loader', 'css-loader'],
-            },
-            {
-                test: /\.(png|svg|jpg|jpeg|gif)$/i,
-                type: 'asset/resource',
             },
             {
                 test: /\.js$/,
@@ -27,7 +31,11 @@ module.exports = {
                         presets: ['@babel/preset-env'],
                     },
                 },
-            }
+            },
+            {
+                test: /\.(png|svg|jpe?g|gif|webp)$/i,
+                type: 'asset/resource',
+            },
         ],
     },
     plugins: [
