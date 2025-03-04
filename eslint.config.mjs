@@ -15,6 +15,12 @@ export default [
         sourceType: 'module',
       },
     },
+    ignores: [
+      "**/node_modules/",
+      "**/dist/",
+      "**/coverage/",
+      "**/*.config.js"
+  ],
     rules: {},
   },
 ];
