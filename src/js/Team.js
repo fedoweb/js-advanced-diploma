@@ -12,5 +12,11 @@
  * ```
  * */
 export default class Team {
+  constructor(characters) {
+    this.characters = characters;
+  }
   // TODO: write your logic here
 }
+
+
+//возможно нужен итератор чтоб формировать правильный массив или гет сет??
