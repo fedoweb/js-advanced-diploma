@@ -1,5 +1,10 @@
 import Character from './Character';
-
+import Bowman from "./characters/Bowman";
+import Daemon from "./characters/Daemon";
+import Magician from "./characters/Magician";
+import Swordsman from "./characters/Swordsman";
+import Undead from "./characters/Undead";
+import Vampire from "./characters/Vampire";
 export default class PositionedCharacter {
   constructor(character, position) {
     if (!(character instanceof Character)) {
