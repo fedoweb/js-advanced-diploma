@@ -1,4 +1,5 @@
 import PositionedCharacter from "./PositionedCharacter";
+import GamePlay from "./GamePlay";
 import {generateTeam} from "./generators";
 import Bowman from "./characters/Bowman";
 import Daemon from "./characters/Daemon";
@@ -33,9 +34,18 @@ export default class GameController {
   }
 
   onCellEnter(index) {
-    console.log(index);
-    // TODO: react to mouse enter
+    console.log('enter');
+    //проверить есть ли там персонаж
+    this.gamePlay.showCellTooltip("🎖1 ⚔10 🛡40 ❤50", index); 
   }
+  
+  showCharacterInfo() {
+    this.gamePlay.addCellEnterListener(this.onCellEnter);
+  }
+
+  getCharacterInfo() {
+    // метод возвращающий строку с информацией
+  }  
 
   onCellLeave(index) {
     console.log(index);
