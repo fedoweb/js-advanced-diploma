@@ -1,5 +1,4 @@
 import PositionedCharacter from "./PositionedCharacter";
-import GamePlay from "./GamePlay";
 import {generateTeam} from "./generators";
 import Bowman from "./characters/Bowman";
 import Daemon from "./characters/Daemon";
@@ -13,7 +12,11 @@ export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
+
+    this.positions = this.getPositions();
   }
+
+  
 
   init() {
     // TODO: add event listeners to gamePlay events
@@ -25,7 +28,7 @@ export default class GameController {
 
 
     this.gamePlay.drawUi('prairie');
-    this.gamePlay.redrawPositions(this.positions());
+    this.gamePlay.redrawPositions(this.positions);
   }
 
   onCellClick(index) {
@@ -34,26 +37,31 @@ export default class GameController {
   }
 
   onCellEnter(index) {
-    console.log('enter');
-    //проверить есть ли там персонаж
-    this.gamePlay.showCellTooltip("🎖1 ⚔10 🛡40 ❤50", index); 
+    for (const character of this.positions) {
+      if(character.position === index) {
+        this.gamePlay.showCellTooltip(this.createCharacterInfo(index), index); 
+      }
+    }
   }
   
   showCharacterInfo() {
     this.gamePlay.addCellEnterListener(this.onCellEnter);
   }
 
-  getCharacterInfo() {
-    // метод возвращающий строку с информацией
-  }  
+  createCharacterInfo(index) {
+    for (const character of this.positions) {
+      if(character.position === index) {
+        return `🎖${character.character.level} ⚔${character.character.attack} 🛡${character.character.defence} ❤${character.character.health}`;
+      }
+    }
+  }
 
   onCellLeave(index) {
-    console.log(index);
+    this.gamePlay.hideCellTooltip(index);
     // TODO: react to mouse leave
   }
 
-  positions() {
-    
+  getPositions() {
     const playerTeam = this.generatePlayerTeam(this.playerTypes());
     const enemyTeam = this.generateEnemyTeam(this.enemyTypes());
     return [...playerTeam, ...enemyTeam];
@@ -64,7 +72,7 @@ export default class GameController {
     const teamArr = [];
 
     for (const character of team.characters) {
-      let randomPosition = this.getPlayerPosition(8);
+      let randomPosition = this.getPlayerPosition(this.gamePlay.boardSize);
       let validatePosition = this.validatePlayerPosition(teamArr, randomPosition);
 
       const person = new PositionedCharacter(character, validatePosition);
@@ -79,7 +87,7 @@ export default class GameController {
     const teamArr = [];
 
     for (const character of team.characters) {
-      let randomPosition = this.getEnemyPosition(8);
+      let randomPosition = this.getEnemyPosition(this.gamePlay.boardSize);
       let validatePosition = this.validateEnemyPosition(teamArr, randomPosition);
 
       const person = new PositionedCharacter(character, validatePosition);
@@ -119,7 +127,7 @@ export default class GameController {
 
   validatePlayerPosition(arr, position) {
     while (arr.some((item) => item.position === position)) {
-      position = this.getPlayerPosition(8);
+      position = this.getPlayerPosition(this.gamePlay.boardSize);
     }
 
     return position;
@@ -127,7 +135,7 @@ export default class GameController {
 
   validateEnemyPosition(arr, position) {
     while (arr.some((item) => item.position === position)) {
-      position = this.getEnemyPosition(8);
+      position = this.getEnemyPosition(this.gamePlay.boardSize);
     }
 
     return position;
