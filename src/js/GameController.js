@@ -1,4 +1,6 @@
 import PositionedCharacter from "./PositionedCharacter";
+import GameState from "./GameState";
+import GamePlay from "./GamePlay";
 import {generateTeam} from "./generators";
 import Bowman from "./characters/Bowman";
 import Daemon from "./characters/Daemon";
@@ -15,6 +17,7 @@ export default class GameController {
 
     // Инициализация позиций персонажей
     this.positions = this.getPositions();
+    this.gameState;
   }
 
   
@@ -26,21 +29,33 @@ export default class GameController {
     this.gamePlay.addCellLeaveListener((index) => this.onCellLeave(index));
     // TODO: load saved stated from stateService
     //this.loadSavedState();
-
+    this.gameState = new GameState();
+    console.log(this.gameState);
 
     this.gamePlay.drawUi('prairie');
     this.gamePlay.redrawPositions(this.positions);
+  }
+
+  changePlayer() {
+    this.gameState.currentPlayer === 'player' ? 'enemy' : 'player';
+  }
+
+  checkCharacterPlayer(character, allowedTypes) {
+    return allowedTypes.some(type => character.character instanceof type);
   }
 
   onCellClick(index) {
     for (const character of this.positions) {
       this.gamePlay.deselectCell(character.position);
 
-      if(character.position === index) {
-        console.log(index);
+      if(character.position === index && this.checkCharacterPlayer(character, this.playerTypes())) {
+        //console.log(this.checkCharacterPlayer(character,this.playerTypes()));
         this.gamePlay.selectCell(index);
-      }
+        return;
+      } 
     }
+    
+    GamePlay.showError('Здесь никого нет!');
     // TODO: react to click
   }
 
