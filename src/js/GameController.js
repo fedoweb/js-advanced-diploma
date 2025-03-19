@@ -18,9 +18,7 @@ export default class GameController {
     // Инициализация позиций персонажей
     this.positions = this.getPositions();
     this.gameState;
-  }
-
-  
+  } 
 
   init() {
     // TODO: add event listeners to gamePlay events
@@ -35,42 +33,76 @@ export default class GameController {
     this.gamePlay.drawUi('prairie');
     this.gamePlay.redrawPositions(this.positions);
   }
-
-  changePlayer() {
-    this.gameState.currentPlayer === 'player' ? 'enemy' : 'player';
-  }
-
-  checkCharacterPlayer(character, allowedTypes) {
-    return allowedTypes.some(type => character.character instanceof type);
-  }
-
+  
   onCellClick(index) {
-    for (const character of this.positions) {
-      this.gamePlay.deselectCell(character.position);
+    //если персонаж уже выбран
+    if(this.gameState.selectedCharacter) {
+      this.gamePlay.deselectCell(this.gameState.selectedCharacter.position);
 
-      if(character.position === index && this.checkCharacterPlayer(character, this.playerTypes())) {
-        //console.log(this.checkCharacterPlayer(character,this.playerTypes()));
-        this.gamePlay.selectCell(index);
-        return;
-      } 
+      //перейти на другую клетку
+
+      //атаковать противника
+    } 
+
+    //выбор персонажа
+    const clickedCharacter = this.positions.find(char => char.position === index);
+    console.log('click', this.gameState);
+
+    if(clickedCharacter && this.isPlayer(clickedCharacter)) {
+
+      this.gameState.selectedCharacter = clickedCharacter;
+      this.gamePlay.selectCell(index);
+      return;
     }
-    
-    GamePlay.showError('Здесь никого нет!');
-    // TODO: react to click
+
+    // ошибка
+    GamePlay.showError('Недопустимое действие!');
+    this.gamePlay.deselectCell(index);
+    this.gameState.selectedCharacter = null;
   }
 
   onCellEnter(index) {
-    for (const character of this.positions) {
-      if(character.position === index) {
-        this.gamePlay.showCellTooltip(this.createCharacterInfo(index), index); 
-      }
+    const targetCharacter = this.positions.find((char) => char.position === index);
+    console.log(targetCharacter);
+
+    //если хотим выбрать другого персонажа
+    if (targetCharacter && this.gameState.selectedCharacter &&
+      this.isPlayer(targetCharacter)) {
+      this.gamePlay.setCursor('pointer');
+      return;
     }
-    // TODO: react to mouse enter
+
+    //если хотим атаковать
+    if (this.gameState.selectedCharacter &&
+      this.isEnemy(targetCharacter) &&
+      this.checkAttackRange(this.gameState.selectedCharacter, index)) {
+
+      this.gamePlay.setCursor('crosshair');
+      this.gamePlay.selectCell(index, 'red');
+      return;
+    }
+
+    //если хотим переместиться в рамках допустимого
+    if (this.gameState.selectedCharacter &&
+      this.checkMoveRange(this.gameState.selectedCharacter, index)) { //правильно реализовать проверку на перемещение
+      this.gamePlay.selectCell(index, 'green');
+      return;
+    }
+
+    // Недопустимое действие
+    if(this.gameState.selectedCharacter &&
+      !this.checkMoveRange(this.gameState.selectedCharacter, index)) {
+      this.gamePlay.setCursor('not-allowed');
+    }
   }
 
   onCellLeave(index) {
     this.gamePlay.hideCellTooltip(index);
-    // TODO: react to mouse leave
+    this.gamePlay.setCursor('auto');
+
+    if(this.gameState.selectedCharacter && this.gameState.selectedCharacter.position !== index) {
+      this.gamePlay.deselectCell(index);
+    }
   }
 
   //Возвращает массив позиций персонажей игрока и противника
@@ -79,6 +111,11 @@ export default class GameController {
     const enemyTeam = this.generateEnemyTeam(this.enemyTypes());
     return [...playerTeam, ...enemyTeam];
   }
+
+  //смена игрока
+  changePlayer() {
+    this.gameState.currentPlayer === 'player' ? 'enemy' : 'player';
+  } 
 
   //Генерирует команду игрока
   generatePlayerTeam(allowedTypes) {
@@ -130,6 +167,27 @@ export default class GameController {
     return position;
   }
 
+  //проверка доступности перемещения
+  checkMoveRange(selectedCharacter, targetIndex) {
+    const distance = this.calcDistance(selectedCharacter.position, targetIndex) <= this.getMoveRange(selectedCharacter);
+    const cellEmpty = this.checkCellEmpty(targetIndex);
+    return distance && cellEmpty;
+  }
+
+  //проверка доступности атаки
+  checkAttackRange(selectedCharacter, targetIndex) {
+    const distance = this.calcDistance(selectedCharacter.position, targetIndex) <= this.getAttackRange(selectedCharacter);
+    const targetCharacter = this.positions.find((char) => char.position === targetIndex);
+    const isEnemy = this.isEnemy(targetCharacter);
+
+    return distance && isEnemy;
+  }
+
+  //проверяем что клетка пустая
+  checkCellEmpty(targetIndex) {
+    return !this.positions.some((char) => char.position === targetIndex);
+  }
+
   //Возвращает массив классов персонажей, доступных для команды игрока
   playerTypes() {
     return [Bowman, Magician, Swordsman];
@@ -138,6 +196,22 @@ export default class GameController {
   //Возвращает массив классов персонажей, доступных для команды противника
   enemyTypes() {
     return [Daemon, Undead, Vampire];
+  }
+
+  //является ли персонаж игроком
+  isPlayer(character) {
+    if (!character) {
+      return false;
+    }
+    return this.playerTypes().some((type) => character.character instanceof type);
+  }
+
+  //является ли персонаж противником
+  isEnemy(character) {
+    if (!character) {
+      return false;
+    }
+    return this.enemyTypes().some((type) => character.character instanceof type);
   }
   
   //Возвращает случайную позицию для команды игрока
@@ -162,6 +236,47 @@ export default class GameController {
     return cellIndexArr[Math.floor(Math.random() * cellIndexArr.length)];
   }  
 
+  //вычисление расстояния до новой позиции
+  calcDistance(position, newPosition) {
+    const row1 = Math.floor(position / this.gamePlay.boardSize);
+    const col1 = position % this.gamePlay.boardSize;
+
+    const row2 = Math.floor(newPosition / this.gamePlay.boardSize);
+    const col2 = newPosition % this.gamePlay.boardSize;
+
+    return Math.max(Math.abs(row1 - row2), Math.abs(col1 - col2));
+  }
+
+  //возвращает дальность перемещения в зависимости от типа персонажа
+  getMoveRange(selectedCharacter) {
+    switch (selectedCharacter.character.type) {
+      case 'swordsman':
+      case 'undead':
+        return 4; // Мечники и скелеты 4 клетки
+      case 'bowman':
+      case 'vampire':
+        return 2; // Лучники и вампиры 2 клетки
+      case 'magician':
+      case 'daemon':
+        return 1; // Маги и демоны 1 клетку
+    }
+  }
+
+  //возвращает дальность атаки в зависимости от типа персонажа
+  getAttackRange(selectedCharacter) {
+    switch (selectedCharacter.character.type) {
+      case 'swordsman':
+      case 'undead':
+        return 1; // Мечники и скелеты 1 клеткa
+      case 'bowman':
+      case 'vampire':
+        return 2; // Лучники и вампиры 2 клетки
+      case 'magician':
+      case 'daemon':
+        return 4; // Маги и демоны 4 клетки
+    }
+  }
+
   //Создает строку с информацией о персонаже
   createCharacterInfo(index) {
     for (const character of this.positions) {
@@ -170,11 +285,5 @@ export default class GameController {
       }
     }
   }
-
-  /*
-  showCharacterInfo() {
-    this.gamePlay.addCellEnterListener(this.onCellEnter);
-  } 
-  */ 
 }
 
