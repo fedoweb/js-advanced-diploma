@@ -25,11 +25,9 @@ export default class GameController {
     this.gamePlay.addCellClickListener((index) => this.onCellClick(index));
     this.gamePlay.addCellEnterListener((index) => this.onCellEnter(index));
     this.gamePlay.addCellLeaveListener((index) => this.onCellLeave(index));
-    // TODO: load saved stated from stateService
-    //this.loadSavedState();
-    this.gameState = new GameState();
-    console.log(this.gameState);
 
+    // TODO: load saved stated from stateService   
+    this.gameState = new GameState();
     this.gamePlay.drawUi('prairie');
     this.gamePlay.redrawPositions(this.positions);
   }
@@ -40,16 +38,25 @@ export default class GameController {
       this.gamePlay.deselectCell(this.gameState.selectedCharacter.position);
 
       //перейти на другую клетку
+      if(this.isEmpty(index) && this.checkMoveRange(this.gameState.selectedCharacter, index)) {
+        
+        this.move(index);
+        this.changePlayer();
+        return;
+      }
 
       //атаковать противника
+      if (this.checkAttackRange(this.gameState.selectedCharacter, index)) {
+        this.attack(index);
+        this.changePlayer();
+        return;
+      }
     } 
 
     //выбор персонажа
     const clickedCharacter = this.positions.find(char => char.position === index);
-    console.log('click', this.gameState);
 
     if(clickedCharacter && this.isPlayer(clickedCharacter)) {
-
       this.gameState.selectedCharacter = clickedCharacter;
       this.gamePlay.selectCell(index);
       return;
@@ -63,7 +70,6 @@ export default class GameController {
 
   onCellEnter(index) {
     const targetCharacter = this.positions.find((char) => char.position === index);
-    console.log(targetCharacter);
 
     //если хотим выбрать другого персонажа
     if (targetCharacter && this.gameState.selectedCharacter &&
@@ -84,7 +90,7 @@ export default class GameController {
 
     //если хотим переместиться в рамках допустимого
     if (this.gameState.selectedCharacter &&
-      this.checkMoveRange(this.gameState.selectedCharacter, index)) { //правильно реализовать проверку на перемещение
+      this.checkMoveRange(this.gameState.selectedCharacter, index)) { 
       this.gamePlay.selectCell(index, 'green');
       return;
     }
@@ -103,6 +109,38 @@ export default class GameController {
     if(this.gameState.selectedCharacter && this.gameState.selectedCharacter.position !== index) {
       this.gamePlay.deselectCell(index);
     }
+  }
+
+  //передвижение
+  move(index) {
+    this.gameState.selectedCharacter.position = index;
+    this.gamePlay.redrawPositions(this.positions);
+
+    this.gamePlay.deselectCell(index);
+    this.gameState.selectedCharacter = null;
+  }
+
+  //атака
+  async attack(index) {
+    const attackCharacter = this.gameState.selectedCharacter;
+    const targetCharacter = this.positions.find((char) => char.position === index);
+
+    const damage = Math.max(
+      attackCharacter.character.attack - targetCharacter.character.defence,
+      attackCharacter.character.attack * 0.1
+    );
+
+    await this.gamePlay.showDamage(index, Math.round(damage));
+
+    targetCharacter.character.health -= damage;
+
+    if (targetCharacter.character.health <= 0) {
+      this.positions = this.positions.filter((char) => char !== targetCharacter);
+    }
+
+    this.gamePlay.redrawPositions(this.positions);
+    this.gamePlay.deselectCell(index);
+    this.gameState.selectedCharacter = null;
   }
 
   //Возвращает массив позиций персонажей игрока и противника
@@ -170,7 +208,7 @@ export default class GameController {
   //проверка доступности перемещения
   checkMoveRange(selectedCharacter, targetIndex) {
     const distance = this.calcDistance(selectedCharacter.position, targetIndex) <= this.getMoveRange(selectedCharacter);
-    const cellEmpty = this.checkCellEmpty(targetIndex);
+    const cellEmpty = this.isEmpty(targetIndex);
     return distance && cellEmpty;
   }
 
@@ -183,11 +221,6 @@ export default class GameController {
     return distance && isEnemy;
   }
 
-  //проверяем что клетка пустая
-  checkCellEmpty(targetIndex) {
-    return !this.positions.some((char) => char.position === targetIndex);
-  }
-
   //Возвращает массив классов персонажей, доступных для команды игрока
   playerTypes() {
     return [Bowman, Magician, Swordsman];
@@ -196,6 +229,11 @@ export default class GameController {
   //Возвращает массив классов персонажей, доступных для команды противника
   enemyTypes() {
     return [Daemon, Undead, Vampire];
+  }
+
+  //является ли клетка пустой
+  isEmpty(targetIndex) {
+    return !this.positions.some((char) => char.position === targetIndex);
   }
 
   //является ли персонаж игроком
@@ -236,17 +274,6 @@ export default class GameController {
     return cellIndexArr[Math.floor(Math.random() * cellIndexArr.length)];
   }  
 
-  //вычисление расстояния до новой позиции
-  calcDistance(position, newPosition) {
-    const row1 = Math.floor(position / this.gamePlay.boardSize);
-    const col1 = position % this.gamePlay.boardSize;
-
-    const row2 = Math.floor(newPosition / this.gamePlay.boardSize);
-    const col2 = newPosition % this.gamePlay.boardSize;
-
-    return Math.max(Math.abs(row1 - row2), Math.abs(col1 - col2));
-  }
-
   //возвращает дальность перемещения в зависимости от типа персонажа
   getMoveRange(selectedCharacter) {
     switch (selectedCharacter.character.type) {
@@ -275,6 +302,17 @@ export default class GameController {
       case 'daemon':
         return 4; // Маги и демоны 4 клетки
     }
+  }
+
+  //вычисление расстояния до новой позиции
+  calcDistance(position, newPosition) {
+    const row1 = Math.floor(position / this.gamePlay.boardSize);
+    const col1 = position % this.gamePlay.boardSize;
+
+    const row2 = Math.floor(newPosition / this.gamePlay.boardSize);
+    const col2 = newPosition % this.gamePlay.boardSize;
+
+    return Math.max(Math.abs(row1 - row2), Math.abs(col1 - col2));
   }
 
   //Создает строку с информацией о персонаже
