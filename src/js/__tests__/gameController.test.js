@@ -28,7 +28,7 @@ describe('return character information', () => {
     test('should return correct information string', () => {
         const character = { level: 2, attack: 25, defence: 25, health: 50,};
         const positionedCharacter = {position: 10, character,};
-        gameController.positions = [positionedCharacter];
+        gameController.gameState.positions = [positionedCharacter];
         const result = gameController.createCharacterInfo(10);
 
         expect(result).toBe("🎖2 ⚔25 🛡25 ❤50");
@@ -62,7 +62,7 @@ describe('attack and move character type', () => {
         const character = {character: {level: 1, attack: 25, defence: 25, health: 50, type: 'swordsman'}, position: 0};
         const targetIndex = 1;
         const undead = new PositionedCharacter(new Undead(1), 1);
-        gameController.positions = [undead];
+        gameController.gameState.positions = [undead];
 
         expect(gameController.checkAttackRange(character, targetIndex)).toBe(true);
     });
@@ -71,7 +71,7 @@ describe('attack and move character type', () => {
         const character = {character: {level: 1, attack: 25, defence: 25, health: 50, type: 'swordsman'}, position: 0};
         const targetIndex = 2;
         const undead = new PositionedCharacter(new Undead(1), 2);
-        gameController.positions = [undead];
+        gameController.gameState.positions = [undead];
 
         expect(gameController.checkAttackRange(character, targetIndex)).toBe(false);
     });
@@ -80,7 +80,7 @@ describe('attack and move character type', () => {
         const character = {character: {level: 1, attack: 25, defence: 25, health: 50, type: 'bowman'}, position: 0};
         const targetIndex = 18;
         const vampire = new PositionedCharacter(new Vampire(1), 18);
-        gameController.positions = [vampire];
+        gameController.gameState.positions = [vampire];
 
         expect(gameController.checkAttackRange(character, targetIndex)).toBe(true);
     });
@@ -89,7 +89,7 @@ describe('attack and move character type', () => {
         const character = {character: {level: 1, attack: 25, defence: 25, health: 50, type: 'bowman'}, position: 0};
         const targetIndex = 27;
         const vampire = new PositionedCharacter(new Vampire(1), 27);
-        gameController.positions = [vampire];
+        gameController.gameState.positions = [vampire];
 
         expect(gameController.checkAttackRange(character, targetIndex)).toBe(false);
     });
@@ -98,7 +98,7 @@ describe('attack and move character type', () => {
         const character = {character: {level: 1, attack: 25, defence: 25, health: 50, type: 'magician'}, position: 0};
         const targetIndex = 32;
         const daemon = new PositionedCharacter(new Daemon(1), 32);
-        gameController.positions = [daemon];
+        gameController.gameState.positions = [daemon];
 
         expect(gameController.checkAttackRange(character, targetIndex)).toBe(true);
     });
@@ -107,7 +107,7 @@ describe('attack and move character type', () => {
         const character = {character: {level: 1, attack: 25, defence: 25, health: 50, type: 'magician'}, position: 0};
         const targetIndex = 40;
         const daemon = new PositionedCharacter(new Daemon(1), 40);
-        gameController.positions = [daemon];
+        gameController.gameState.positions = [daemon];
 
         expect(gameController.checkAttackRange(character, targetIndex)).toBe(false);
     });
