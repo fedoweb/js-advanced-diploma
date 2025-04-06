@@ -1,3 +1,5 @@
+import GamePlay from "./GamePlay";
+
 export default class GameStateService {
   constructor(storage) {
     this.storage = storage;
@@ -11,8 +13,8 @@ export default class GameStateService {
     try {
       return JSON.parse(this.storage.getItem('state'));
     } catch (e) {
-      console.log(e);
-      throw new Error('Invalid state');
+      GamePlay.showError('Invalid state');
+      throw new Error(e);
     }
   }
 }
